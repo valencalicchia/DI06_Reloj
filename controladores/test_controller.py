@@ -1,74 +1,57 @@
-from PySide6.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QLabel, QPushButton, QTimeEdit, QLineEdit, QCheckBox
 from PySide6.QtCore import QTime
+from PySide6.QtWidgets import QMainWindow
+from vistas.ui_test import Ui_Test
 from controladores.reloj_controller import DigitalClock
 
-class MainWindow(QMainWindow):
+
+class TestWindow(QMainWindow, Ui_Test):
+    """
+    Ventana de prueba para el reloj digital.
+
+    Hereda de QMainWindow y de la interfaz generada Ui_Test.
+    """
     def __init__(self):
+        """Inicializa la ventana de prueba."""
         super().__init__()
-        self.setWindowTitle("Reloj Digital con Alarma")
+        self.setupUi(self)
 
-        # Configuración de la ventana principal
-        self.central_widget = QWidget()
-        self.setCentralWidget(self.central_widget)
-        self.layout = QVBoxLayout()
+        # Instancia el reloj digital
+        self.clock = DigitalClock(self)
+        self.vcVerticalLayout.insertWidget(0, self.clock)
 
-        # Reloj digital
-        self.clock = DigitalClock()
-        self.layout.addWidget(self.clock)
+ # Configura los eventos de la interfaz
+        self.vcTimeEdit.setTime(QTime.currentTime().addSecs(60))  # Establece la hora actual + 1 minuto
+        self.vcChck12H.toggled.connect(self.toggle_format)  # Conecta el checkbox de formato
+        self.vcBtnActivar.clicked.connect(self.activate_alarm)  # Conecta el botón de activar alarma
+        self.vcBtnDesactivar.clicked.connect(self.deactivate_alarm)  # Conecta el botón de desactivar alarma
+        self.clock.alarm_triggered.connect(self.show_alarm_message)  # Conecta la señal de alarma
 
-        # Checkbox para cambiar el formato de 12/24 horas
-        self.format_checkbox = QCheckBox("Formato 12 horas")
-        self.format_checkbox.stateChanged.connect(self.toggle_format)
-        self.layout.addWidget(self.format_checkbox)
+    def toggle_format(self, checked):
+        """
+        Cambia el formato del reloj entre 12 y 24 horas.
 
-        # Checkbox para activar/desactivar la alarma
-        self.alarm_checkbox = QCheckBox("Activar Alarma")
-        self.alarm_checkbox.stateChanged.connect(self.toggle_alarm)
-        self.layout.addWidget(self.alarm_checkbox)
+        Args:
+            checked (bool): Estado del checkbox (True = formato de 12 horas).
+        """
+        self.clock.set_12_hour_format(checked)
 
-        # QTimeEdit para seleccionar la hora de la alarma
-        self.alarm_time_edit = QTimeEdit()
-        self.alarm_time_edit.setDisplayFormat("HH:mm")
-        self.alarm_time_edit.setTime(QTime.currentTime())  # Hora actual por defecto
-        self.layout.addWidget(QLabel("Hora de Alarma:"))
-        self.layout.addWidget(self.alarm_time_edit)
+    def activate_alarm(self):
+        """Activa la alarma con los valores configurados en la interfaz."""
+        time = self.vcTimeEdit.time()
+        message = self.vcMensajeTxt.toPlainText()
+        self.clock.set_alarm(True, time.hour(), time.minute(), message)
+        self.vcLblMensaje_2.setText(f"Alarma configurada para {time.toString('HH:mm')}")
 
-        # QLineEdit para el mensaje de la alarma
-        self.message_lineedit = QLineEdit()
-        self.message_lineedit.setPlaceholderText("Introduce el mensaje de la alarma")
-        self.layout.addWidget(QLabel("Mensaje de Alarma:"))
-        self.layout.addWidget(self.message_lineedit)
+    def deactivate_alarm(self):
+        """Desactiva la alarma."""
+        self.clock.set_alarm(False, 0, 0, "")
+        self.vcLblMensaje_2.setText("Alarma desactivada")
 
-        # Etiqueta para mostrar el estado de la alarma
-        self.alarm_label = QLabel("Alarma desactivada")
-        self.layout.addWidget(self.alarm_label)
+    def show_alarm_message(self, message):
+        """
+        Muestra el mensaje de la alarma cuando se activa.
 
-        self.central_widget.setLayout(self.layout)
-
-        # Conectar la señal de alarma del reloj a un método
-        self.clock.alarm_triggered.connect(self.on_alarm_triggered)
-
-    def toggle_format(self, state):
-        """Cambia el formato del reloj entre 12 y 24 horas."""
-        self.clock.set_is_12_hour_format(state == 2)
-
-    def toggle_alarm(self, state):
-        """Activa o desactiva la alarma."""
-        self.clock.set_alarm_enabled(state == 2)
-        if state == 2:
-            self.alarm_label.setText("Alarma activada")
-            self.set_alarm()
-        else:
-            self.alarm_label.setText("Alarma desactivada")
-
-    def set_alarm(self):
-        """Configura la hora y el mensaje de la alarma."""
-        alarm_time = self.alarm_time_edit.time()
-        self.clock.set_alarm_hour(alarm_time.hour())
-        self.clock.set_alarm_minute(alarm_time.minute())
-        self.clock.set_alarm_message(self.message_lineedit.text())
-        self.alarm_label.setText(f"Alarma configurada para {alarm_time.toString('HH:mm')}")
-
-    def on_alarm_triggered(self, message):
-        """Maneja el evento de alarma activada."""
-        self.alarm_label.setText(f"Alarma activada: {message}")
+        Args:
+            message (str): Mensaje de la alarma.
+        """
+        self.vcLblMensaje_2.setText(f"Alarma activada: {message}")
