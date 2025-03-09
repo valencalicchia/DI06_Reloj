@@ -54,4 +54,5 @@ class TestWindow(QMainWindow, Ui_Test):
         Args:
             message (str): Mensaje de la alarma.
         """
-        self.vcLblMensaje_2.setText(f"Alarma activada: {message}")
+        time = self.vcTimeEdit.time().toString('HH:mm')
+        self.vcLblMensaje_2.setText(f"Alarma '{message}' activada a las {time}")
